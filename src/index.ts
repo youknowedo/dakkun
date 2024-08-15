@@ -1,6 +1,17 @@
 import { WebClient } from "@slack/web-api";
 import { Hono } from "hono";
+import { parseArgs } from "util";
 
+const { values, positionals } = parseArgs({
+    args: Bun.argv,
+    options: {
+        port: {
+            type: "string",
+        },
+    },
+    strict: true,
+    allowPositionals: true,
+});
 const web = new WebClient();
 
 const app = new Hono({});
@@ -22,4 +33,7 @@ app.get("/dakkun/down", async (c) => {
     );
 });
 
-export default app;
+export default {
+    ...app,
+    port: values.port,
+};
