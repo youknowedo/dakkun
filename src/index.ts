@@ -22,7 +22,4 @@ app.get("/dakkun/down", async (c) => {
     );
 });
 
-export default {
-    port: 3030,
-    fetch: app.fetch,
-};
+export default app;
