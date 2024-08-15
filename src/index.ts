@@ -3,7 +3,7 @@ import { Hono } from "hono";
 
 const web = new WebClient();
 
-const app = new Hono();
+const app = new Hono({});
 
 app.get("/dakkun/down", async (c) => {
     const isDown = await fetch("https://hackhour.hackclub.com/status")
@@ -22,4 +22,7 @@ app.get("/dakkun/down", async (c) => {
     );
 });
 
-export default app;
+export default {
+    port: 3030,
+    fetch: app.fetch,
+};
