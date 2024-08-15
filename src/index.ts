@@ -16,7 +16,7 @@ const web = new WebClient();
 
 const app = new Hono({});
 
-app.get("/dakkun/down", async (c) => {
+app.post("/dakkun/down", async (c) => {
     const isDown = await fetch("https://hackhour.hackclub.com/status")
         .then((res) => {
             if (res.ok) return res.json();
