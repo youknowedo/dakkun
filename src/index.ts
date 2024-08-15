@@ -28,9 +28,7 @@ app.post("/dakkun/down", async (c) => {
             return true;
         });
 
-    return c.text(
-        JSON.stringify({ text: isDown ? "down hakkun is" : "up hakkun is" })
-    );
+    return c.text(JSON.stringify(isDown ? "down hakkun is" : "up hakkun is"));
 });
 
 export default {
