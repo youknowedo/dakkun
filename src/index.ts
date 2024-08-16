@@ -50,12 +50,12 @@ app.post("/dakkun/remind", async (c) => {
     const db = await drizzle;
 
     const userId = JSON.stringify((await c.req.formData()).get("user_id"));
-    if (!userId) return c.text("no user id");
+    if (!userId) return c.text("hmmm. no user id, i found. message Sigfredo, you must.");
 
     const user = (
         await db.select().from(reminders).where(eq(reminders.id, userId))
     )[0];
-    if (user) return c.text("already set");
+    if (user) return c.text("remind you, i already will");
     
     await db.insert(reminders).values({
         id: userId,
@@ -82,7 +82,7 @@ app.post("/dakkun/remind", async (c) => {
             
         }, 60000);
 
-    return c.text("setting reminder");
+    return c.text("remind you, i will");
 });
 
 export default {
