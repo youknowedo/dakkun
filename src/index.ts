@@ -34,53 +34,58 @@ const isDown = async () =>
 
 drizzle.then(async (db) => {
     const users = await db.select().from(reminders);
-    
+
     // delete
     users.forEach(async (user) => {
         await db.delete(reminders).where(eq(reminders.id, user.id));
-    })
-})
+    });
+});
 
-app.post("/dakkun/down", async (c) => {
-    return c.text((await isDown()) ? "down, hakkun is!" : "up, hakkun is!");
+app.post("/dakkuun/down", async (c) => {
+    return c.text((await isDown()) ? "down, hakkuun is!" : "up, hakkuun is!");
 });
 
 let t: Timer | undefined = undefined;
-app.post("/dakkun/remind", async (c) => {
+app.post("/dakkuun/remind", async (c) => {
     const db = await drizzle;
 
     const userId = JSON.stringify((await c.req.formData()).get("user_id"));
-    if (!userId) return c.text("hmmm. no user id, i found. message Sigfredo, you must.");
+    if (!userId)
+        return c.text("hmmm. no user id, i found. message Sigfredo, you must.");
 
     const user = (
         await db.select().from(reminders).where(eq(reminders.id, userId))
     )[0];
     if (user) return c.text("remind you, i already will");
-    
+
     await db.insert(reminders).values({
         id: userId,
     });
-    
-    if (!t)
+
+    if (!t) {
+        const down = await isDown();
+        if (!down) {
+            return c.text("up, hakkuun is!");
+        }
+
         t = setInterval(async () => {
-                clearInterval(t);
-                t = undefined;
+            const down = await isDown();
+            if (down) return;
 
-                const down = await isDown();
+            clearInterval(t);
+            t = undefined;
 
-                if (down) return;
+            const convo = await web.conversations.open({
+                users: userId.substring(1, userId.length - 1),
+            });
+            if (!convo.channel?.id) return;
 
-                const convo = await web.conversations.open({
-                    users: userId.substring(1, userId.length-1),
-                });
-                if (!convo.channel?.id) return;
-
-                await web.chat.postMessage({
-                    channel: convo.channel.id,
-                    text: "up, hakkun is!",
-                });
-            
+            await web.chat.postMessage({
+                channel: convo.channel.id,
+                text: "up, hakkuun is!",
+            });
         }, 60000);
+    }
 
     return c.text("remind you, i will");
 });

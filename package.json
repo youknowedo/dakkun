@@ -1,5 +1,5 @@
 {
-  "name": "dakkun",
+  "name": "dakkuun",
   "scripts": {
     "dev": "bun run --hot src/index.ts"
   },
