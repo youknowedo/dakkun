@@ -17,7 +17,7 @@ const { values, positionals } = parseArgs({
 });
 
 const drizzle = initDb();
-const web = new WebClient();
+const web = new WebClient(process.env.SLACK_TOKEN);
 const app = new Hono({});
 
 const isDown = async () =>
@@ -32,6 +32,15 @@ const isDown = async () =>
             return true;
         });
 
+drizzle.then(async (db) => {
+    const users = await db.select().from(reminders);
+    
+    // delete
+    users.forEach(async (user) => {
+        await db.delete(reminders).where(eq(reminders.id, user.id));
+    })
+})
+
 app.post("/dakkun/down", async (c) => {
     return c.text((await isDown()) ? "down, hakkun is!" : "up, hakkun is!");
 });
@@ -40,30 +49,36 @@ let t: Timer | undefined = undefined;
 app.post("/dakkun/remind", async (c) => {
     const db = await drizzle;
 
-    const userId = c.req.query("user_id");
-    if (!userId) return c.text("no user");
+    const userId = JSON.stringify((await c.req.formData()).get("user_id"));
+    if (!userId) return c.text("no user id");
 
     const user = (
         await db.select().from(reminders).where(eq(reminders.id, userId))
     )[0];
+    console.log(user);
     if (user) return c.text("already set");
-
-    db.insert(reminders).values({
+    
+    await db.insert(reminders).values({
         id: userId,
     });
-
+    
     if (!t)
         t = setInterval(async () => {
-            const down = await isDown();
-            if (down) {
                 clearInterval(t);
                 t = undefined;
+                const convo = await web.conversations.open({
+                    users: userId,
+                });
+                if (!convo.channel?.id) return;
+                
                 await web.chat.postMessage({
-                    channel: userId,
+                    channel: convo.channel.id,
                     text: "up, hakkun is!",
                 });
-            }
-        }, 60000);
+            
+        }, 100);
+
+    return c.text("setting reminder");
 });
 
 export default {
