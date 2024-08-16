@@ -55,7 +55,6 @@ app.post("/dakkun/remind", async (c) => {
     const user = (
         await db.select().from(reminders).where(eq(reminders.id, userId))
     )[0];
-    console.log(user);
     if (user) return c.text("already set");
     
     await db.insert(reminders).values({
@@ -66,11 +65,16 @@ app.post("/dakkun/remind", async (c) => {
         t = setInterval(async () => {
                 clearInterval(t);
                 t = undefined;
+
+                const down = await isDown();
+
+                if (down) return;
+                
                 const convo = await web.conversations.open({
-                    users: userId,
+                    users: userId.substring(1, userId.length-1),
                 });
                 if (!convo.channel?.id) return;
-                
+
                 await web.chat.postMessage({
                     channel: convo.channel.id,
                     text: "up, hakkun is!",
