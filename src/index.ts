@@ -69,7 +69,7 @@ app.post("/dakkun/remind", async (c) => {
                 const down = await isDown();
 
                 if (down) return;
-                
+
                 const convo = await web.conversations.open({
                     users: userId.substring(1, userId.length-1),
                 });
@@ -80,7 +80,7 @@ app.post("/dakkun/remind", async (c) => {
                     text: "up, hakkun is!",
                 });
             
-        }, 100);
+        }, 60000);
 
     return c.text("setting reminder");
 });
