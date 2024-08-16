@@ -1,0 +1,3 @@
+CREATE TABLE IF NOT EXISTS "reminders" (
+	"id" text PRIMARY KEY NOT NULL
+);
