@@ -1,5 +1,5 @@
 import { WebClient } from "@slack/web-api";
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { Hono } from "hono";
 import { parseArgs } from "util";
 import { initDb } from "./db";
@@ -19,6 +19,8 @@ const { values, positionals } = parseArgs({
 const drizzle = initDb();
 const web = new WebClient(process.env.SLACK_TOKEN);
 const app = new Hono({});
+
+let firstDown = true;
 
 const isDown = async () =>
     await fetch("https://hackhour.hackclub.com/status")
@@ -41,15 +43,55 @@ drizzle.then(async (db) => {
     });
 });
 
+setInterval(async () => {
+    const db = await drizzle;
+
+    const down = await isDown();
+    if (down) {
+        if (firstDown) {
+            firstDown = false;
+
+            web.chat.postMessage({
+                channel: "C06SBHMQU8G",
+                text: "down, hakkuun is! enter `/dakkuun` to get a reminder, you must.",
+            });
+        }
+
+        return;
+    }
+
+    const users = await db.select().from(reminders);
+
+    users.forEach(async (user) => {
+        const convo = await web.conversations.open({
+            users: user.id,
+        });
+        if (!convo.channel?.id) return;
+
+        await web.chat.postMessage({
+            channel: convo.channel.id,
+            text: "up, hakkuun is!",
+        });
+    });
+
+    await db.delete(reminders).where(
+        inArray(
+            reminders.id,
+            users.map((u) => {
+                return u.id;
+            })
+        )
+    );
+}, 60000);
+
 app.post("/dakkuun/down", async (c) => {
     return c.text((await isDown()) ? "down, hakkuun is!" : "up, hakkuun is!");
 });
 
-let t: Timer | undefined = undefined;
 app.post("/dakkuun/remind", async (c) => {
     const db = await drizzle;
 
-    const userId = JSON.stringify((await c.req.formData()).get("user_id"));
+    const userId = (await c.req.formData()).get("user_id")?.toString();
     if (!userId)
         return c.text("hmmm. no user id, i found. message Sigfredo, you must.");
 
@@ -62,30 +104,8 @@ app.post("/dakkuun/remind", async (c) => {
         id: userId,
     });
 
-    if (!t) {
-        const down = await isDown();
-        if (!down) {
-            return c.text("up, hakkuun is!");
-        }
-
-        t = setInterval(async () => {
-            const down = await isDown();
-            if (down) return;
-
-            clearInterval(t);
-            t = undefined;
-
-            const convo = await web.conversations.open({
-                users: userId.substring(1, userId.length - 1),
-            });
-            if (!convo.channel?.id) return;
-
-            await web.chat.postMessage({
-                channel: convo.channel.id,
-                text: "up, hakkuun is!",
-            });
-        }, 60000);
-    }
+    const down = await isDown();
+    if (!down) return c.text("up, hakkuun is!");
 
     return c.text("remind you, i will");
 });
