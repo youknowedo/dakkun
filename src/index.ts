@@ -3,9 +3,11 @@ import { eq, inArray } from "drizzle-orm";
 import { Hono } from "hono";
 import { parseArgs } from "util";
 import { initDb } from "./db";
+import { app } from "./routes";
 import { reminders } from "./schema";
+import { isDown } from "./utils";
 
-const { values, positionals } = parseArgs({
+const { values } = parseArgs({
     args: Bun.argv,
     options: {
         port: {
@@ -16,32 +18,10 @@ const { values, positionals } = parseArgs({
     allowPositionals: true,
 });
 
-const drizzle = initDb();
-const web = new WebClient(process.env.SLACK_TOKEN);
-const app = new Hono({});
+export const drizzle = initDb();
+export const web = new WebClient(process.env.SLACK_TOKEN);
 
 let downKnown = false;
-
-const isDown = async () =>
-    await fetch("https://hackhour.hackclub.com/status")
-        .then((res) => {
-            if (res.ok) return res.json();
-        })
-        .then((data) => {
-            return !data.slackConnected;
-        })
-        .catch(() => {
-            return true;
-        });
-
-drizzle.then(async (db) => {
-    const users = await db.select().from(reminders);
-
-    // delete
-    users.forEach(async (user) => {
-        await db.delete(reminders).where(eq(reminders.id, user.id));
-    });
-});
 
 setInterval(async () => {
     const db = await drizzle;
@@ -131,30 +111,13 @@ setInterval(async () => {
     downKnown = false;
 }, 60000);
 
-app.post("/dakkuun/down", async (c) => {
-    return c.text((await isDown()) ? "down, hakkuun is!" : "up, hakkuun is!");
-});
+drizzle.then(async (db) => {
+    const users = await db.select().from(reminders);
 
-app.post("/dakkuun/remind", async (c) => {
-    const db = await drizzle;
-
-    const userId = (await c.req.formData()).get("user_id")?.toString();
-    if (!userId)
-        return c.text("hmmm. no user id, i found. message Sigfredo, you must.");
-
-    const user = (
-        await db.select().from(reminders).where(eq(reminders.id, userId))
-    )[0];
-    if (user) return c.text("remind you, i already will");
-
-    const down = await isDown();
-    if (!down) return c.text("up, hakkuun is!");
-
-    await db.insert(reminders).values({
-        id: userId,
+    // delete
+    users.forEach(async (user) => {
+        await db.delete(reminders).where(eq(reminders.id, user.id));
     });
-
-    return c.text("remind you, i will");
 });
 
 export default {
