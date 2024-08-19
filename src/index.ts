@@ -20,7 +20,7 @@ const drizzle = initDb();
 const web = new WebClient(process.env.SLACK_TOKEN);
 const app = new Hono({});
 
-let firstDown = true;
+let downKnown = false;
 
 const isDown = async () =>
     await fetch("https://hackhour.hackclub.com/status")
@@ -48,8 +48,8 @@ setInterval(async () => {
 
     const down = await isDown();
     if (down) {
-        if (firstDown) {
-            firstDown = false;
+        if (!downKnown) {
+            downKnown = true;
 
             web.chat.postMessage({
                 channel: "C06SBHMQU8G",
@@ -59,6 +59,8 @@ setInterval(async () => {
 
         return;
     }
+
+    if (!downKnown) return;
 
     const users = await db.select().from(reminders);
 
@@ -82,6 +84,8 @@ setInterval(async () => {
             })
         )
     );
+
+    downKnown = false;
 }, 60000);
 
 app.post("/dakkuun/down", async (c) => {
@@ -100,12 +104,12 @@ app.post("/dakkuun/remind", async (c) => {
     )[0];
     if (user) return c.text("remind you, i already will");
 
+    const down = await isDown();
+    if (!down) return c.text("up, hakkuun is!");
+
     await db.insert(reminders).values({
         id: userId,
     });
-
-    const down = await isDown();
-    if (!down) return c.text("up, hakkuun is!");
 
     return c.text("remind you, i will");
 });
