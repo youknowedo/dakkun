@@ -2,7 +2,8 @@
     "name": "dakkuun",
     "scripts": {
         "dev": "bun run --hot src/index.ts --port 48515",
-        "build": "bun build ./src/index.ts --target node --compile --outfile dist/dakkuun"
+        "build": "bun build ./src/index.ts --target node --compile --outfile dist/dakkuun",
+        "build:dev": "bun build ./src/index.ts --target node  --outfile dist/dakkuun.js"
     },
     "dependencies": {
         "@slack/web-api": "^7.3.4",
