@@ -1,6 +1,6 @@
 # dakkuun
 
-Spelled it wrong when i made the repo and I don't want to break the links by changing it lol. Checks if the hackhour bot (currently hakkuun) is down or not. Can also send you a reminder when it's hakkuun is back up again.
+Checks if the hackhour bot (currently hakkuun) is down or not. Can also send you a reminder when it's hakkuun is back up again.
 
 ## Commands
 
