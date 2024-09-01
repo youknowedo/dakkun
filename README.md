@@ -1,3 +1,5 @@
+Made for Hack Club Arcade with GitHub Copilot as an assistant
+
 # dakkuun
 
 Checks if the hackhour bot (currently hakkuun) is down or not. Can also send you a reminder when it's hakkuun is back up again.
